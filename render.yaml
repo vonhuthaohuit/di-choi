@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: vung-tau-trip
+    env: docker
+    repo: https://github.com/your-username/vung-tau-trip.git # Thay đổi URL repo của bạn
+    dockerfilePath: ./Dockerfile
+    region: singapore # hoặc oregon, frankfurt tùy theo vị trí
+    plan: free # hoặc starter, standard, pro
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        value: https://vung-tau-trip.onrender.com # Thay đổi theo tên service của bạn
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/html/database/database.sqlite
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: SESSION_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync 
