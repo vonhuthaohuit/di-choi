@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Google Apps Script Connection</title>
+</head>
+<body>
+    <h1>Test Google Apps Script Connection</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <div id="result"></div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUm6yNoO8uoXfqJju52OkuGyTPBHPQnBfbsQE8CIPR106WA7EqpA3E5FgNjq1uxvDx/exec';
+
+        function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing connection...';
+
+            // Test basic GET request
+            fetch(GOOGLE_SCRIPT_URL)
+                .then(response => response.text())
+                .then(data => {
+                    resultDiv.innerHTML = '<p style="color: green;">✅ Connection successful!</p><p>Response: ' + data + '</p>';
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ Connection failed!</p><p>Error: ' + error.message + '</p>';
+                });
+        }
+
+        // Test form submission
+        function testFormSubmission() {
+            const testData = {
+                type: 'confirm',
+                timestamp: new Date().toISOString(),
+                name: 'Test User',
+                phone: '0123456789',
+                email: 'test@example.com',
+                message: 'This is a test submission'
+            };
+
+            const script = document.createElement('script');
+            const callbackName = 'testCallback_' + Date.now();
+            
+            window[callbackName] = function(response) {
+                const resultDiv = document.getElementById('result');
+                if (response && response.result === 'success') {
+                    resultDiv.innerHTML = '<p style="color: green;">✅ Form submission successful!</p>';
+                } else {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ Form submission failed!</p><p>Error: ' + (response ? response.error : 'Unknown error') + '</p>';
+                }
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            const url = GOOGLE_SCRIPT_URL + '?callback=' + callbackName + '&data=' + encodeURIComponent(JSON.stringify(testData));
+            script.src = url;
+            script.onerror = function() {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '<p style="color: red;">❌ Form submission failed!</p>';
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            document.head.appendChild(script);
+        }
+    </script>
+
+    <br><br>
+    <button onclick="testFormSubmission()">Test Form Submission</button>
+</body>
+</html> 
