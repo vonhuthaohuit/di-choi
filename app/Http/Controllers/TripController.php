@@ -8,6 +8,17 @@ use Illuminate\Support\Facades\Log;
 
 class TripController extends Controller
 {
+    // URL của Google Apps Script Web App
+    private $googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyUm6yNoO8uoXfqJju52OkuGyTPBHPQnBfbsQE8CIPR106WA7EqpA3E5FgNjq1uxvDx/exec';
+
+    /**
+     * Hiển thị trang chính
+     */
+    public function index()
+    {
+        return view('trip.index');
+    }
+
     /**
      * Xử lý form xác nhận tham gia
      */
@@ -36,17 +47,16 @@ class TripController extends Controller
                 'message' => $validated['message'] ?? '',
             ];
 
-            // Gửi request đến Google Apps Script với cấu hình từ config
-            $response = $this->sendToGoogleScript($data);
+            // Gửi request đến Google Apps Script
+            $response = Http::timeout(30)->post($this->googleScriptUrl, $data);
 
-            if ($response && $response->successful()) {
+            if ($response->successful()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Đã xác nhận tham gia thành công! Cảm ơn bạn đã đăng ký.'
                 ]);
             } else {
-                $errorMessage = $response ? 'HTTP Error: ' . $response->status() : 'No response received';
-                throw new \Exception($errorMessage);
+                throw new \Exception('HTTP Error: ' . $response->status());
             }
 
         } catch (\Exception $e) {
@@ -95,17 +105,16 @@ class TripController extends Controller
                 'budget' => $validated['budget'] ?? '',
             ];
 
-            // Gửi request đến Google Apps Script với cấu hình từ config
-            $response = $this->sendToGoogleScript($data);
+            // Gửi request đến Google Apps Script
+            $response = Http::timeout(30)->post($this->googleScriptUrl, $data);
 
-            if ($response && $response->successful()) {
+            if ($response->successful()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Đã gửi góp ý thành công! Cảm ơn bạn đã đóng góp ý kiến.'
                 ]);
             } else {
-                $errorMessage = $response ? 'HTTP Error: ' . $response->status() : 'No response received';
-                throw new \Exception($errorMessage);
+                throw new \Exception('HTTP Error: ' . $response->status());
             }
 
         } catch (\Exception $e) {
@@ -127,62 +136,5 @@ class TripController extends Controller
         return response()->json([
             'message' => 'Feature đang phát triển'
         ]);
-    }
-
-    /**
-     * Hiển thị trang chính
-     */
-    public function index()
-    {
-        return view('trip.index');
-    }
-
-    /**
-     * Gửi dữ liệu đến Google Apps Script với cấu hình linh hoạt
-     */
-    private function sendToGoogleScript($data)
-    {
-        try {
-            $config = config('services.google_script');
-            
-            $httpClient = Http::timeout($config['timeout']);
-            
-            // Chỉ disable SSL verification nếu cấu hình cho phép (thường trong development)
-            if (!$config['verify_ssl']) {
-                $httpClient = $httpClient->withoutVerifying();
-            } else {
-                // For production: specify SSL options if needed
-                $httpClient = $httpClient->withOptions([
-                    'verify' => true,
-                    // Uncomment below if you need to specify custom CA bundle
-                    // 'curl' => [
-                    //     CURLOPT_CAINFO => storage_path('cacert.pem'),
-                    // ],
-                ]);
-            }
-            
-            // Thêm retry logic
-            $httpClient = $httpClient->retry($config['retry_times'], $config['retry_delay']);
-            
-            // Gửi request
-            $response = $httpClient->post($config['url'], $data);
-            
-            Log::info('Google Script request sent', [
-                'url' => $config['url'],
-                'data_type' => $data['type'],
-                'response_status' => $response->status(),
-                'response_body' => $response->body(),
-                'ssl_verify' => $config['verify_ssl']
-            ]);
-            
-            return $response;
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to send data to Google Script', [
-                'error' => $e->getMessage(),
-                'data_type' => $data['type'] ?? 'unknown'
-            ]);
-            throw $e;
-        }
     }
 }
